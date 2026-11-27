@@ -19,6 +19,7 @@ People who want a costume they can make or assemble themselves, from a ten-minut
   - "Let the studio choose" opens a random costume from the currently filtered list.
   - Each card opens a detail dialog with difficulty, time, budget, spook level, materials, numbered method, previous/next navigation (buttons and arrow keys) and a "Remix this in the costume lab" button.
 - **Costume Lab**: pick character (8), twist (6, including "Keep it classic"), prop (6) and palette (6). That gives 8 x 6 x 6 x 6 = 1,728 combinations, each with a "Creation No." from 1 to 1,728. The result panel shows a generated name, a "carrying" line, a description, time, budget, spook level, palette swatches and a merged, de-duplicated materials list.
+  - Estimated budget: every option has a USD cost range, and the result panel and plan text show per-part rows and a total. A "Purchase mode" selector (Thrift ×0.5, Buy new ×1.0, Premium ×1.8, default Buy new) scales every figure; each end is rounded to whole USD and the total is the sum of the rounded rows.
   - Actions: Summon a random costume, Share my plan (Web Share API, falls back to copy), Copy my costume plan, Download plan (.txt).
 - **Before the night**: four numbered wearability tips (dress rehearsal, visibility, hem, weather).
 - **Built with Kiro** section describing the spec-first, steering and verification process.

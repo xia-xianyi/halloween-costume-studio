@@ -32,6 +32,7 @@ Each entry:
 - `PROPS` (6): `lantern`, `candelabra`, `flask`, `spellbook`, `map`, `plushbat`. Fields: `label`, `phrase` (used in "...carrying <phrase>."), `spook`, `desc`, `materials`.
 - `PALETTES` (6): `midnight`, `pumpkin`, `bone`, `toxic`, `teal`, `candycorn`. Fields: `label`, `colors` (3 hex values), `note`.
 - `SPOOK_LABELS` (index 0 empty, 1 to 5) and `BUDGET_LABELS` (index 0 to 2).
+- `BUDGET_MODES` (3): `thrift`, `new`, `premium`. Fields: `label`, `multiplier`, `desc`. Selected via `labState.mode` (default `new`). It is not in `GROUPS`, so it does not affect the creation number or Summon. Every displayed cost goes through `adjustCost()`.
 
 ### Composition rules (`currentBuild()`)
 

@@ -218,6 +218,8 @@
       .result .palette-note { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 16px; font-size: 0.95rem; }
       .result .palette-note .swatches i { width: 18px; height: 18px; margin-top: 3px; }
       .result h4 { margin: 18px 0 8px; font-size: 1rem; }
+      .budget-mode { margin: 0 0 6px; font-size: 0.92rem; color: var(--muted); }
+      .budget-mode strong { color: var(--ink); }
       .budget { list-style: none; margin: 0; padding: 0; }
       .budget li { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; border-bottom: 1px dashed var(--line); break-inside: avoid; }
       .budget .budget-total { font-weight: 700; border-top: 1px solid var(--line); border-bottom: 0; }
@@ -371,6 +373,7 @@
               <div class="spook" id="res-spook"></div>
               <p class="palette-note" id="res-palette"></p>
               <h4>Estimated budget</h4>
+              <p class="budget-mode" id="res-budget-mode"></p>
               <ul class="budget" id="res-budget"></ul>
               <p class="budget-note">Rough DIY estimates in US dollars. Prices vary by shop and by what you already own.</p>
               <h4>What you'll need</h4>
@@ -699,6 +702,12 @@
       };
       var SPOOK_LABELS = ["", "Barely a boo", "Mildly spooky", "Properly eerie", "Genuinely chilling", "Full haunted house"];
       var BUDGET_LABELS = ["Low budget", "Moderate budget", "Splurge"];
+      /* purchase modes scale every cost estimate; key order = button order */
+      var BUDGET_MODES = {
+        thrift:  { label: "Thrift", multiplier: 0.5, desc: "second-hand hunting" },
+        new:     { label: "Buy new", multiplier: 1, desc: "buying the parts new" },
+        premium: { label: "Premium", multiplier: 1.8, desc: "better fabrics and sturdier props" }
+      };
 
       /* ---------------- Helpers ---------------- */
       function el(id) { return document.getElementById(id); }
@@ -881,7 +890,7 @@
       });
 
       /* ---------------- Costume Lab ---------------- */
-      var labState = { base: "vampire", twist: "royal", prop: "lantern", palette: "midnight" };
+      var labState = { base: "vampire", twist: "royal", prop: "lantern", palette: "midnight", mode: "new" };
       var GROUPS = [
         { key: "base", title: "Character", hint: "the base build", data: BASES },
         { key: "twist", title: "Twist", hint: "pick one, or keep it classic", data: TWISTS },
@@ -889,48 +898,69 @@
         { key: "palette", title: "Palette", hint: "the colour story", data: PALETTES }
       ];
 
+      function currentMode() { return BUDGET_MODES[labState.mode]; }
+      function fmtMultiplier(m) { return "×" + m.toFixed(1); }
+      /* scale a [min, max] cost by the selected mode, rounded to whole USD */
+      function adjustCost(r) {
+        var m = currentMode().multiplier;
+        return [Math.round(r[0] * m), Math.round(r[1] * m)];
+      }
+
       function swatchHTML(colors) {
         return '<span class="swatches" aria-hidden="true">' +
           colors.map(function (c) { return '<i style="background:' + c + '"></i>'; }).join("") + "</span>";
+      }
+
+      /* one titled row of option buttons; innerFn(item) returns each button's inner markup */
+      function renderOptGroup(box, g, innerFn) {
+        var wrap = document.createElement("div");
+        wrap.className = "opt-group";
+        var h = document.createElement("h3");
+        h.innerHTML = g.title + " <small>— " + g.hint + "</small>";
+        wrap.appendChild(h);
+        var row = document.createElement("div");
+        row.className = "opts";
+        row.setAttribute("role", "group");
+        row.setAttribute("aria-label", g.title);
+        Object.keys(g.data).forEach(function (k) {
+          var item = g.data[k];
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "opt";
+          b.setAttribute("data-group", g.key);
+          b.setAttribute("data-key", k);
+          b.setAttribute("aria-pressed", labState[g.key] === k ? "true" : "false");
+          b.innerHTML = innerFn(item);
+          b.addEventListener("click", function () {
+            labState[g.key] = k;
+            renderLabControls();
+            renderResult();
+            /* the options are rebuilt, so hand keyboard focus back to the pressed one */
+            var again = el("lab-controls").querySelector('[data-group="' + g.key + '"][data-key="' + k + '"]');
+            if (again) again.focus();
+          });
+          row.appendChild(b);
+        });
+        wrap.appendChild(row);
+        box.appendChild(wrap);
       }
 
       function renderLabControls() {
         var box = el("lab-controls");
         box.innerHTML = "";
         GROUPS.forEach(function (g) {
-          var wrap = document.createElement("div");
-          wrap.className = "opt-group";
-          var h = document.createElement("h3");
-          h.innerHTML = g.title + " <small>— " + g.hint + "</small>";
-          wrap.appendChild(h);
-          var row = document.createElement("div");
-          row.className = "opts";
-          row.setAttribute("role", "group");
-          row.setAttribute("aria-label", g.title);
-          Object.keys(g.data).forEach(function (k) {
-            var item = g.data[k];
-            var b = document.createElement("button");
-            b.type = "button";
-            b.className = "opt";
-            b.setAttribute("data-group", g.key);
-            b.setAttribute("data-key", k);
-            b.setAttribute("aria-pressed", labState[g.key] === k ? "true" : "false");
-            b.innerHTML = (g.key === "palette" ? swatchHTML(item.colors) : "") +
+          renderOptGroup(box, g, function (item) {
+            return (g.key === "palette" ? swatchHTML(item.colors) : "") +
               "<span>" + item.label + "</span>" +
-              '<small class="opt-cost">' + fmtRange(item.cost) + "</small>";
-            b.addEventListener("click", function () {
-              labState[g.key] = k;
-              renderLabControls();
-              renderResult();
-              /* the options are rebuilt, so hand keyboard focus back to the pressed one */
-              var again = el("lab-controls").querySelector('[data-group="' + g.key + '"][data-key="' + k + '"]');
-              if (again) again.focus();
-            });
-            row.appendChild(b);
+              '<small class="opt-cost">' + fmtRange(adjustCost(item.cost)) + "</small>";
           });
-          wrap.appendChild(row);
-          box.appendChild(wrap);
         });
+        renderOptGroup(box,
+          { key: "mode", title: "Purchase mode", hint: "how you'll shop for it", data: BUDGET_MODES },
+          function (item) {
+            return "<span>" + item.label + "</span>" +
+              '<small class="opt-cost">' + fmtMultiplier(item.multiplier) + "</small>";
+          });
       }
 
       function indexOfKey(obj, k) { return Object.keys(obj).indexOf(k); }
@@ -957,16 +987,17 @@
         if (twist.desc) descParts.push(twist.desc);
         descParts.push(prop.desc);
         var costs = [
-          { part: "Character", label: base.label, cost: base.cost },
-          { part: "Twist", label: twist.label, cost: twist.cost },
-          { part: "Prop", label: prop.label, cost: prop.cost },
-          { part: "Palette", label: pal.label, cost: pal.cost }
+          { part: "Character", label: base.label, cost: adjustCost(base.cost) },
+          { part: "Twist", label: twist.label, cost: adjustCost(twist.cost) },
+          { part: "Prop", label: prop.label, cost: adjustCost(prop.cost) },
+          { part: "Palette", label: pal.label, cost: adjustCost(pal.cost) }
         ];
+        /* total = sum of the adjusted parts, so the rows always add up */
         var costTotal = costs.reduce(function (t, p) {
           return [t[0] + p.cost[0], t[1] + p.cost[1]];
         }, [0, 0]);
         return {
-          costs: costs, costTotal: costTotal,
+          costs: costs, costTotal: costTotal, mode: currentMode(),
           name: name, number: number, carrying: "…carrying " + prop.phrase + ".",
           desc: descParts.join(" "), spook: spook, time: time,
           budgetLabel: BUDGET_LABELS[budget], materials: materials,
@@ -985,6 +1016,8 @@
         el("res-spook").innerHTML = spookHTML(b.spook);
         el("res-palette").innerHTML = swatchHTML(b.palette.colors) +
           "<span><strong>" + b.palette.label + ".</strong> " + b.palette.note + "</span>";
+        el("res-budget-mode").innerHTML = "<strong>" + b.mode.label + " mode (" +
+          fmtMultiplier(b.mode.multiplier) + ")</strong> — " + b.mode.desc + ".";
         el("res-budget").innerHTML = b.costs.map(function (c) {
           return "<li><span>" + c.part + ": " + c.label + "</span><span>" + fmtRange(c.cost) + "</span></li>";
         }).join("") +
@@ -1025,7 +1058,8 @@
           "Build time: " + fmtTime(b.time) + " · " + b.budgetLabel +
             " · Spook level " + b.spook + "/5 (" + SPOOK_LABELS[b.spook] + ")",
           "",
-          "Estimated budget (USD, rough DIY estimate):"
+          "Estimated budget (USD, rough DIY estimate):",
+          "Purchase mode: " + b.mode.label + " (" + fmtMultiplier(b.mode.multiplier) + ") — " + b.mode.desc
         ].concat(b.costs.map(function (c) {
           return "- " + c.part + " (" + c.label + "): " + fmtRange(c.cost);
         })).concat([
