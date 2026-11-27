@@ -53,15 +53,46 @@ All costs pass through one path, so the buttons, result panel and plan text alwa
 5. `planText()` writes the `Estimated budget (USD, rough DIY estimate):` heading, then `Purchase mode: <label> (<×m>) — <desc>`, then one `- <Part> (<label>): <range>` line per part and `Total estimate: <range>`, all before `What I need:`. Copy, Share and Download all call `planText()`.
 6. `fmtRange()` prints `$a–$b` (en dash), or a single `$a` when min equals max (including `$0`).
 
-`tests/lab-budget.test.js` relies on these plan-text line formats. If you change them, update the test too.
+After `What I need:` and the materials, `planText()` ends with a blank line and `Rebuild this costume: <shareUrl()>`.
 
-### Composition rules (`currentBuild()`)
+`tests/lab-budget.test.js` and `tests/share-link.test.js` rely on these plan-text line formats. If you change them, update the tests too.
+
+### Composer (`buildFor(state)`)
+
+- `buildFor(s)` composes one creation from `{ base, twist, prop, palette, mode }`. `currentBuild()` is `buildFor(labState)`. The finder, the share links and the tests all call `buildFor`, so the result panel, the fit count and the plan text can't disagree.
+- `adjustCost(range, mode)` takes an optional `BUDGET_MODES` entry and defaults to the selected mode.
+- `creationNumber(s)` is the mixed-radix index over `GROUPS`, with each table's `Object.keys(...).length` as the radix. `ALL_COMBOS` lists every creation in that order, so `ALL_COMBOS[n - 1]` is creation `n`. `TOTAL_COMBOS = ALL_COMBOS.length`.
+- `withMode(combo, modeKey)` turns an `ALL_COMBOS` entry into a full state.
+
+### Composition rules (`buildFor()`)
 
 - Name: `twist.name + " " + base.label` (no prefix for `none`).
 - Spook: `clamp(base + twist + prop, 1, 5)`. Time: `max(5, base.time + twist.time)`. Budget index: `clamp(base + twist, 0, 2)`.
 - Materials: base, then twist, then prop lists, de-duplicated by lower-cased text.
-- Creation number: mixed-radix index `(((base * 6 + twist) * 6 + prop) * 6 + palette) + 1` using `Object.keys` order. The `6` multipliers and the "1,728" text assume 6 twists, 6 props and 6 palettes. Adding or removing options means updating the multipliers, the "of 1,728" strings (result meta and `planText()`), the hero stat, the meta description and the "26 parts" Kiro text. Reordering keys renumbers every creation.
-- Adding a costume: add the `COSTUMES` entry, the matching `BASES` entry with the same id, and update the "Eight/8" copy. Adding a twist, prop or palette is one new object, plus the number updates above.
+- Creation number: `creationNumber()`, which equals `(((base * 6 + twist) * 6 + prop) * 6 + palette) + 1` for today's tables, using `Object.keys` order. The radix comes from the table sizes and script text uses `fmtInt(TOTAL_COMBOS)`, so adding an option needs no code change. The static copy does need updating by hand: the hero stat, the meta description, the "1,728" in section text and README, and the counts in README. `tests/copy-consistency.test.js` lists what's stale. Reordering or inserting keys renumbers creations and breaks existing share links. Append new options at the end of a table, and expect to regenerate `tests/fixtures/lab-baseline.json` deliberately.
+- Adding a costume: add the `COSTUMES` entry and the matching `BASES` entry with the same id (the lab portrait is looked up by id), then update the "Eight/8" copy. Adding a twist, prop or palette is one new object, plus the copy updates above.
+
+### Finder
+
+- `FIT_SPOOK` holds the fright bands: `gentle` [1, 2], `eerie` [3, 3], `terrifying` [4, 5]. `fitLimits` is `{ budget, time, spook }`, where `null` or `""` means no limit. `readLimits()` fills it from `#fit-budget`, `#fit-time` and `#fit-spook`.
+- `fits(build, limits)` passes when the top end of the total ≤ the budget, time ≤ the limit and spook is in the band. `fittingCombos(modeKey, limits)` filters `ALL_COMBOS`, defaulting to the current mode and limits.
+- `renderFinder()` writes `#fit-count` (`role="status"`), rebuilds the rescue buttons in `#fit-fix`, and sets the Summon label and `disabled` state. Summon draws from `fittingCombos()` when any limit is set.
+- `refreshLab({ sync })` runs `renderLabControls()`, `renderResult()` and `renderFinder()`, plus `syncHash()` when `sync` is set. Every user-initiated lab change goes through it.
+
+### Share links
+
+- `labHash(s)` builds `#lab=<n>&mode=<key>`. `parseLabHash(hash)` returns a state or `null` (it checks the range 1–`TOTAL_COMBOS` and requires an own key of `BUDGET_MODES`). `applyHash()` copies a valid hash into `labState`. `shareUrl()` is the page URL with that hash. `syncHash()` calls `history.replaceState` inside `try`.
+- Startup (`Go`) runs `applyHash()` before the first render and never syncs, so a plain visit keeps a clean URL. With a valid hash it scrolls to `#lab` on `load`. `hashchange` re-applies.
+
+### Lights out
+
+- `setTheme(dark)` sets `data-theme="dark|light"` on `<html>` and `aria-pressed` on `#lights`. Startup sets it from `prefers-color-scheme` and follows OS changes until the user presses the toggle (`themeChosen`).
+- CSS has the dark tokens twice: `:root[data-theme="dark"]` and `@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) }`, the second as the no-JS fallback. Keep the two blocks identical. Effects key off `[data-theme="dark"]`: `.dots.lvl-3/4/5` glow (from `dotsHTML(n)`), `haunt-pulse` on level 5, `candle` on the countdown.
+
+### Result portrait
+
+- `#res-figure` / `#res-img` show `COSTUME_BY_ID[labState.base].img`. `src` is reassigned only when the base changes (tracked in `data-for`). The border is palette colour 1 and the background (the inner ring) is colour 2. `#res-twist` is the twist badge, hidden for `none`.
+- Summon adds `.conjuring` to `#result`, which runs the `materialise` animation on `#res-name` and the portrait image. `animationend` removes it.
 - Keep `COSTUMES` and `BASES` text consistent. They are separate copies today (the lab materials are shorter versions of the gallery ones).
 
 ## Naming conventions
@@ -81,11 +112,12 @@ Keep these when changing the page:
 - Landmarks and headings: `<main>`, `<footer>`, `<section>` blocks with `h2`, cards with `h3`.
 - Native controls everywhere: cards, chips and lab options are `<button type="button">`. Toggle state is exposed with `aria-pressed`. Groups use `role="group"` with `aria-label`.
 - Visible focus style: `:focus-visible` with a dashed accent outline. Minimum control height of 2rem globally, and buttons, chips, options and the sort select are 42 to 48px tall. The dialog close button is 44px.
-- Live regions: `role="status"` on the rail count, copy status and dialog position. `aria-live="polite"` on the lab result.
+- Live regions: `role="status"` on the rail count, copy status, dialog position and finder count (`#fit-count`). The lab result is **not** a live region. A visually hidden `#res-announce` (`role="status"`, `.sr-only`) gets one line per change ("Royal Vampire. Creation 37 of 1,728. Total $53–$130, Buy new."). Don't put `aria-live` back on `#result`, because it reads out the whole plan on every press.
+- The Lights out toggle is a `<button>` with `aria-pressed` and a constant label. The crescent is drawn in CSS (`.moon`) and is `aria-hidden`.
 - Card buttons have an `aria-label` ("View the build for <name>"). Costume images have real alt text. Decorative elements (`.dots`, `.swatches`, countdown ticker) use `aria-hidden="true"`. The spook level is also given as text ("Spook level 4 of 5 - Genuinely chilling").
 - Native `<dialog>` with `showModal()`, `aria-labelledby`, a labelled close button, Escape to close (native), click on the backdrop to close, and Left/Right arrows to step through costumes.
-- `prefers-reduced-motion: reduce` disables smooth scrolling, card image zoom and the "conjure" animation. Note that `scrollIntoView({ behavior: "smooth" })` in the "Remix" handler does not check this setting. Prefer `auto` there if you touch it.
-- Dark theme through `prefers-color-scheme` using the same tokens.
+- `prefers-reduced-motion: reduce` disables smooth scrolling, card image zoom, the `materialise` reveal, the `haunt-pulse` and the countdown `candle` flicker. Script scrolls use `prefersCalm()` to choose `auto` or `smooth`.
+- Dark theme through `prefers-color-scheme` or the Lights out toggle, using the same tokens.
 - Colour is never the only signal: palette swatches always sit beside a text label.
 
 ## Print requirements already in the code
@@ -93,7 +125,7 @@ Keep these when changing the page:
 The `@media print` block lets a plan go to the shops:
 
 - White background, black text, 12pt body.
-- Hidden: hero image, filter chips, toolbar (sort and surprise), skip link, hero buttons, lab result action buttons, copy status, the dialog and the footer.
+- Hidden: hero image, filter chips, toolbar (sort and surprise), skip link, hero buttons (including `#tonight`), the Lights out toggle, the finder, the result portrait, lab result action buttons, copy status, the dialog and the footer.
 - Cards and the lab result drop shadows and use `break-inside: avoid`. The lab and Kiro bands lose their tinted backgrounds. Links are black without underline.
 - When adding interactive-only UI (buttons, toolbars, toasts), add it to the print hide list.
 
@@ -101,5 +133,5 @@ The `@media print` block lets a plan go to the shops:
 
 - Edit `index.html` in place. Never paste or regenerate the base64 lines. Use targeted line-range edits.
 - Verify by opening the file in a browser: check filters and sort, dialog navigation, every lab option, Summon, Copy, Download, keyboard-only use, dark mode, reduced motion and print preview.
-- Run `node --test tests/*.test.js` from the repo root (Node 18 or later, no install). It syntax-checks the inline script with `.kiro/hooks/check-inline-script.js` and checks the lab budget arithmetic in the plan text. It runs the page script against a stub DOM, so it does not cover layout, styling or print.
+- Run `node --test tests/*.test.js` from the repo root (Node 18 or later, no install). The `Studio checks on save` hook (`.kiro/hooks/studio-checks.json`) asks for this after every save of `index.html`, `README.md` or a test. The suite covers the syntax check, budget arithmetic, the 1,728 × 3 regression baseline, the finder, share links, seeded property tests and copy consistency (details in `testing.md`, which loads when a test file is open). It runs the page script against a stub DOM, so for layout, themes and print use `/capture-screenshots` (Playwright through MCP).
 - Keep `README.md` in sync when features or counts change (it lists the 8 costumes, the vibes and the lab options).
