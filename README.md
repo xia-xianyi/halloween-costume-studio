@@ -22,3 +22,7 @@ Open `index.html` in any modern browser. That's it.
 ## Built with
 
 HTML · CSS · JavaScript
+
+## License
+
+MIT — see LICENSE.
