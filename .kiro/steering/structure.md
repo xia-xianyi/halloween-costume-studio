@@ -27,12 +27,33 @@ Each entry:
 
 ### Lab tables (objects keyed by id; key order defines button order and creation numbers)
 
-- `BASES` (8 keys, same ids as `COSTUMES`): `label`, `spook`, `time` (minutes, number), `budget` (0 to 2), `desc`, `materials`.
-- `TWISTS` (6): `none` ("Keep it classic", empty name, zero modifiers), `royal`, `zombie`, `steampunk`, `disco`, `glow`. Fields: `label`, `name` (prefix used in the generated name), `spook` (can be negative), `time`, `budget`, `desc`, `materials`.
-- `PROPS` (6): `lantern`, `candelabra`, `flask`, `spellbook`, `map`, `plushbat`. Fields: `label`, `phrase` (used in "...carrying <phrase>."), `spook`, `desc`, `materials`.
-- `PALETTES` (6): `midnight`, `pumpkin`, `bone`, `toxic`, `teal`, `candycorn`. Fields: `label`, `colors` (3 hex values), `note`.
+- `BASES` (8 keys, same ids as `COSTUMES`): `label`, `cost`, `spook`, `time` (minutes, number), `budget` (0 to 2), `desc`, `materials`.
+- `TWISTS` (6): `none` ("Keep it classic", empty name, zero modifiers, `cost: [0, 0]`), `royal`, `zombie`, `steampunk`, `disco`, `glow`. Fields: `label`, `cost`, `name` (prefix used in the generated name), `spook` (can be negative), `time`, `budget`, `desc`, `materials`.
+- `PROPS` (6): `lantern`, `candelabra`, `flask`, `spellbook`, `map`, `plushbat`. Fields: `label`, `cost`, `phrase` (used in "...carrying <phrase>."), `spook`, `desc`, `materials`.
+- `PALETTES` (6): `midnight`, `pumpkin`, `bone`, `toxic`, `teal`, `candycorn`. Fields: `label`, `cost`, `colors` (3 hex values), `note`.
 - `SPOOK_LABELS` (index 0 empty, 1 to 5) and `BUDGET_LABELS` (index 0 to 2).
-- `BUDGET_MODES` (3): `thrift`, `new`, `premium`. Fields: `label`, `multiplier`, `desc`. Selected via `labState.mode` (default `new`). It is not in `GROUPS`, so it does not affect the creation number or Summon. Every displayed cost goes through `adjustCost()`.
+- `BUDGET_MODES` (3): `thrift` (0.5), `new` (1), `premium` (1.8). Fields: `label`, `multiplier`, `desc`. Selected via `labState.mode` (default `new`). It is not in `GROUPS`, so it does not affect the creation number, and Summon and Remix leave it alone.
+
+### The `cost` field
+
+Every entry in `BASES`, `TWISTS`, `PROPS` and `PALETTES` has `cost: [min, max]`: a rough DIY estimate in whole US dollars, with `0 <= min <= max`. It is the "Buy new" price. Never store mode-adjusted numbers in the tables.
+
+- `BASES`: core garments and accessories. `TWISTS`: extras the twist adds (`none` is `[0, 0]`). `PROPS`: the prop itself. `PALETTES`: paint, dye or trim for the colour story.
+- Keep it consistent with the coarse `budget` level: a `budget: 0` item must not cost more at its max than a `budget: 2` item at its min in the same group.
+- A new lab option without `cost` breaks `adjustCost()` and the tests.
+
+### Budget data flow
+
+All costs pass through one path, so the buttons, result panel and plan text always agree:
+
+1. `adjustCost(range)` multiplies both ends by `currentMode().multiplier` and rounds each with `Math.round` (whole USD, halves up). With `new` (×1) the stored figures come through unchanged.
+2. `renderLabControls()` shows `fmtRange(adjustCost(item.cost))` in each part button's `.opt-cost`. The Purchase mode group, built by the same `renderOptGroup()` helper, shows `fmtMultiplier()` (×0.5, ×1.0, ×1.8).
+3. `currentBuild()` returns `costs` (four `{ part, label, cost }` items, cost already adjusted, in the order Character, Twist, Prop, Palette), `costTotal` (the sum of the adjusted mins and the sum of the adjusted maxes, so the rows always add up to the total) and `mode` (the selected `BUDGET_MODES` entry).
+4. `renderResult()` writes the mode line to `#res-budget-mode` and the rows and the `.budget-total` row to `#res-budget`.
+5. `planText()` writes the `Estimated budget (USD, rough DIY estimate):` heading, then `Purchase mode: <label> (<×m>) — <desc>`, then one `- <Part> (<label>): <range>` line per part and `Total estimate: <range>`, all before `What I need:`. Copy, Share and Download all call `planText()`.
+6. `fmtRange()` prints `$a–$b` (en dash), or a single `$a` when min equals max (including `$0`).
+
+`tests/lab-budget.test.js` relies on these plan-text line formats. If you change them, update the test too.
 
 ### Composition rules (`currentBuild()`)
 
@@ -79,5 +100,6 @@ The `@media print` block lets a plan go to the shops:
 ## Working in this repo
 
 - Edit `index.html` in place. Never paste or regenerate the base64 lines. Use targeted line-range edits.
-- Verify by opening the file in a browser: check filters and sort, dialog navigation, every lab option, Summon, Copy, Download, keyboard-only use, dark mode, reduced motion and print preview. There is no automated test suite.
+- Verify by opening the file in a browser: check filters and sort, dialog navigation, every lab option, Summon, Copy, Download, keyboard-only use, dark mode, reduced motion and print preview.
+- Run `node --test tests/*.test.js` from the repo root (Node 18 or later, no install). It syntax-checks the inline script with `.kiro/hooks/check-inline-script.js` and checks the lab budget arithmetic in the plan text. It runs the page script against a stub DOM, so it does not cover layout, styling or print.
 - Keep `README.md` in sync when features or counts change (it lists the 8 costumes, the vibes and the lab options).

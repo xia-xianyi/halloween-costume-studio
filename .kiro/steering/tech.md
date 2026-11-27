@@ -6,8 +6,9 @@ inclusion: always
 
 ## Architecture
 
-- The whole app is one file, `index.html`, with an inline `<style>` block and one inline `<script>` block. Other files in the repo are `README.md` and `LICENSE` (MIT).
-- No build step, bundler, package manager, framework, transpiler, tests or CI. To run it, open `index.html` in a browser.
+- The whole app is one file, `index.html`, with an inline `<style>` block and one inline `<script>` block. Other files in the repo are `README.md`, `LICENSE` (MIT), the Node tests in `tests/` and the Kiro config in `.kiro/`.
+- No build step, bundler, package manager, framework, transpiler or CI. To run it, open `index.html` in a browser.
+- Tests live in `tests/` and use only Node's built-in `node:test` and `assert` (no `package.json`, no dependencies). Run `node --test tests/*.test.js`.
 - The file is about 5 MB because all images are embedded as `data:image/jpeg;base64,...` strings: the `og:image` meta tag (line 11), the hero image (line 320) and one `img` field per costume in `COSTUMES`. These lines are hundreds of KB long. Do not open the file whole. Use `grep -n`, `sed -n 'A,Bp' | cut -c1-200`, or editor line ranges, and never print or rewrite those lines.
 - The only external requests are the Google Fonts stylesheet (DM Serif Display, Public Sans) with `preconnect`. System serif/sans fallbacks are declared. Do not add other network dependencies; the page should keep working offline apart from the fonts.
 
