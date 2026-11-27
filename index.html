@@ -203,6 +203,8 @@
       }
       .opt:hover { border-color: var(--accent); }
       .opt[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-strong); }
+      .opt-cost { font-size: 0.82rem; font-weight: 500; color: var(--muted); }
+      .opt[aria-pressed="true"] .opt-cost { color: inherit; }
       .swatches { display: inline-flex; gap: 3px; }
       .swatches i { width: 12px; height: 12px; border-radius: 50%; display: block; border: 1px solid rgba(0,0,0,0.22); }
       .result {
@@ -217,6 +219,10 @@
       .result .palette-note { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 16px; font-size: 0.95rem; }
       .result .palette-note .swatches i { width: 18px; height: 18px; margin-top: 3px; }
       .result h4 { margin: 18px 0 8px; font-size: 1rem; }
+      .budget { list-style: none; margin: 0; padding: 0; }
+      .budget li { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; border-bottom: 1px dashed var(--line); break-inside: avoid; }
+      .budget .budget-total { font-weight: 700; border-top: 1px solid var(--line); border-bottom: 0; }
+      .budget-note { margin: 8px 0 0; font-size: 0.85rem; color: var(--muted); }
       .materials { margin: 0; padding-left: 20px; columns: 1; }
       @media (min-width: 560px) { .materials { columns: 2; column-gap: 26px; } }
       .materials li { margin-bottom: 5px; break-inside: avoid; }
@@ -365,6 +371,9 @@
               <div class="meta" id="res-meta"></div>
               <div class="spook" id="res-spook"></div>
               <p class="palette-note" id="res-palette"></p>
+              <h4>Estimated budget</h4>
+              <ul class="budget" id="res-budget"></ul>
+              <p class="budget-note">Rough DIY estimates in US dollars. Prices vary by shop and by what you already own.</p>
               <h4>What you'll need</h4>
               <ul class="materials" id="res-materials"></ul>
               <div class="result-actions">
@@ -656,38 +665,38 @@
 
       /* ---------------- Lab data ---------------- */
       var BASES = {
-        vampire:   { label: "Vampire", spook: 4, time: 40, budget: 1, desc: "A high collar, a swish of cape, and just enough menace to make the room go quiet.", materials: ["Black cape with a stand-up collar", "Cream waistcoat or white shirt", "Black trousers or long skirt", "Plastic fangs", "Pale powder and dark eyeliner", "Hair gel"] },
-        witch:     { label: "Witch", spook: 2, time: 35, budget: 1, desc: "Pointy hat, flowing layers and a broom that doubles as a dance partner.", materials: ["Pointed witch hat", "Black dress or cloak", "Striped tights", "Broomstick", "Sage-green shawl"] },
-        ghost:     { label: "Ghost", spook: 2, time: 10, budget: 0, desc: "The oldest trick in the book — a bed sheet, two eye holes and total commitment.", materials: ["White flat bed sheet", "Black felt for eye holes", "Safety pins", "Bright sneakers", "Candy bucket"] },
-        skeleton:  { label: "Skeleton", spook: 4, time: 50, budget: 1, desc: "Bone-white paint on black basics; the ribcage does all the talking.", materials: ["Black top and leggings", "White fabric paint", "Skull face paint", "Black gloves", "Skeleton reference photo"] },
-        scientist: { label: "Mad Scientist", spook: 2, time: 30, budget: 1, desc: "Lab coat, wild hair, and a flask of something that should not glow — but does.", materials: ["White lab coat", "Frizzy grey wig or hairspray", "Safety goggles", "Bow tie", "Flask with green-tinted water", "Rubber gloves"] },
-        pirate:    { label: "Pirate Captain", spook: 4, time: 55, budget: 2, desc: "A captain who never gave up the ship — tattered coat, tricorn hat and a weather eye.", materials: ["Long coat, distressed at the hems", "Tricorn hat", "Eye patch", "Toy hook", "Pale face paint"] },
-        blackcat:  { label: "Black Cat", spook: 1, time: 20, budget: 0, desc: "Ears, whiskers and a tail — the friendliest build on the rail.", materials: ["Black hoodie or onesie", "Cat-ear headband", "Whisker face paint", "Stuffed fabric tail", "Black gloves"] },
-        scarecrow: { label: "Scarecrow", spook: 2, time: 40, budget: 0, desc: "Plaid, patches and straw in every cuff — straight from the pumpkin patch.", materials: ["Plaid flannel shirt", "Patched overalls or jeans", "Straw hat", "Raffia for cuffs and collar", "Stitched-smile face paint", "Small pumpkin"] }
+        vampire:   { label: "Vampire", cost: [30, 65], spook: 4, time: 40, budget: 1, desc: "A high collar, a swish of cape, and just enough menace to make the room go quiet.", materials: ["Black cape with a stand-up collar", "Cream waistcoat or white shirt", "Black trousers or long skirt", "Plastic fangs", "Pale powder and dark eyeliner", "Hair gel"] },
+        witch:     { label: "Witch", cost: [25, 55], spook: 2, time: 35, budget: 1, desc: "Pointy hat, flowing layers and a broom that doubles as a dance partner.", materials: ["Pointed witch hat", "Black dress or cloak", "Striped tights", "Broomstick", "Sage-green shawl"] },
+        ghost:     { label: "Ghost", cost: [5, 15], spook: 2, time: 10, budget: 0, desc: "The oldest trick in the book — a bed sheet, two eye holes and total commitment.", materials: ["White flat bed sheet", "Black felt for eye holes", "Safety pins", "Bright sneakers", "Candy bucket"] },
+        skeleton:  { label: "Skeleton", cost: [20, 45], spook: 4, time: 50, budget: 1, desc: "Bone-white paint on black basics; the ribcage does all the talking.", materials: ["Black top and leggings", "White fabric paint", "Skull face paint", "Black gloves", "Skeleton reference photo"] },
+        scientist: { label: "Mad Scientist", cost: [30, 60], spook: 2, time: 30, budget: 1, desc: "Lab coat, wild hair, and a flask of something that should not glow — but does.", materials: ["White lab coat", "Frizzy grey wig or hairspray", "Safety goggles", "Bow tie", "Flask with green-tinted water", "Rubber gloves"] },
+        pirate:    { label: "Pirate Captain", cost: [55, 110], spook: 4, time: 55, budget: 2, desc: "A captain who never gave up the ship — tattered coat, tricorn hat and a weather eye.", materials: ["Long coat, distressed at the hems", "Tricorn hat", "Eye patch", "Toy hook", "Pale face paint"] },
+        blackcat:  { label: "Black Cat", cost: [10, 25], spook: 1, time: 20, budget: 0, desc: "Ears, whiskers and a tail — the friendliest build on the rail.", materials: ["Black hoodie or onesie", "Cat-ear headband", "Whisker face paint", "Stuffed fabric tail", "Black gloves"] },
+        scarecrow: { label: "Scarecrow", cost: [15, 35], spook: 2, time: 40, budget: 0, desc: "Plaid, patches and straw in every cuff — straight from the pumpkin patch.", materials: ["Plaid flannel shirt", "Patched overalls or jeans", "Straw hat", "Raffia for cuffs and collar", "Stitched-smile face paint", "Small pumpkin"] }
       };
       var TWISTS = {
-        none:      { label: "Keep it classic", name: "", spook: 0, time: 0, budget: 0, desc: "", materials: [] },
-        royal:     { label: "Royal", name: "Royal", spook: 0, time: 10, budget: 1, desc: "The royal treatment: gold trim, jewels, and an imperious wave for the commoners.", materials: ["Gold trim or ribbon", "Costume jewellery or a coronet", "Velvet sash"] },
-        zombie:    { label: "Zombie", name: "Zombie", spook: 2, time: 15, budget: 0, desc: "Fresh from the grave — distress everything, grey the skin, and practise the shuffle.", materials: ["Grey-green face paint", "Fake blood (corn syrup + red food colouring)", "Old clothes you may tear and weather"] },
-        steampunk: { label: "Steampunk", name: "Steampunk", spook: 0, time: 20, budget: 1, desc: "Brass, gears and goggles: Halloween by way of the industrial revolution.", materials: ["Brass-look goggles", "Cardboard gears painted bronze", "Brown belt and straps", "Pocket watch or chain"] },
-        disco:     { label: "Disco", name: "Disco", spook: -1, time: 10, budget: 0, desc: "Studio 54 meets the graveyard — sequins, shine and mirror-ball confidence.", materials: ["Something sequinned", "Metallic face glitter", "Platform shoes", "Mirror-ball pendant"] },
-        glow:      { label: "Glow-in-the-dark", name: "Glow-in-the-Dark", spook: 1, time: 5, budget: 0, desc: "Charge it under a lamp before you leave, then haunt the street in luminous outline.", materials: ["Glow-in-the-dark fabric paint", "UV-reactive tape for outlines"] }
+        none:      { label: "Keep it classic", cost: [0, 0], name: "", spook: 0, time: 0, budget: 0, desc: "", materials: [] },
+        royal:     { label: "Royal", cost: [15, 40], name: "Royal", spook: 0, time: 10, budget: 1, desc: "The royal treatment: gold trim, jewels, and an imperious wave for the commoners.", materials: ["Gold trim or ribbon", "Costume jewellery or a coronet", "Velvet sash"] },
+        zombie:    { label: "Zombie", cost: [5, 15], name: "Zombie", spook: 2, time: 15, budget: 0, desc: "Fresh from the grave — distress everything, grey the skin, and practise the shuffle.", materials: ["Grey-green face paint", "Fake blood (corn syrup + red food colouring)", "Old clothes you may tear and weather"] },
+        steampunk: { label: "Steampunk", cost: [15, 40], name: "Steampunk", spook: 0, time: 20, budget: 1, desc: "Brass, gears and goggles: Halloween by way of the industrial revolution.", materials: ["Brass-look goggles", "Cardboard gears painted bronze", "Brown belt and straps", "Pocket watch or chain"] },
+        disco:     { label: "Disco", cost: [8, 20], name: "Disco", spook: -1, time: 10, budget: 0, desc: "Studio 54 meets the graveyard — sequins, shine and mirror-ball confidence.", materials: ["Something sequinned", "Metallic face glitter", "Platform shoes", "Mirror-ball pendant"] },
+        glow:      { label: "Glow-in-the-dark", cost: [8, 20], name: "Glow-in-the-Dark", spook: 1, time: 5, budget: 0, desc: "Charge it under a lamp before you leave, then haunt the street in luminous outline.", materials: ["Glow-in-the-dark fabric paint", "UV-reactive tape for outlines"] }
       };
       var PROPS = {
-        lantern:    { label: "Flickering lantern", phrase: "a flickering lantern", spook: 1, desc: "The lantern adds instant atmosphere — and means you can actually see the kerb.", materials: ["Battery-powered lantern"] },
-        candelabra: { label: "Silver candelabra", phrase: "a silver candelabra", spook: 1, desc: "A candelabra raises any costume to 'haunted manor' by default.", materials: ["Thrifted or toy candelabra", "LED taper candles"] },
-        flask:      { label: "Bubbling flask", phrase: "a bubbling flask", spook: 0, desc: "Carry the flask like it might explode. It won't. Probably.", materials: ["Glass-look flask", "Green food colouring", "A fizzy tablet for last-minute bubbles"] },
-        spellbook:  { label: "Ancient spell book", phrase: "an ancient spell book", spook: 1, desc: "An old book with a covered spine opens doors — mostly library doors, but still.", materials: ["Old hardback book", "Brown paper for a new cover", "Gold pen for the title"] },
-        map:        { label: "Treasure map", phrase: "a tea-stained treasure map", spook: 0, desc: "The map claims the garden is full of buried gold. Morale soars.", materials: ["Paper stained with cold tea", "Brown marker for aged edges (no real singeing)"] },
-        plushbat:   { label: "Plush bat sidekick", phrase: "a plush bat sidekick", spook: -1, desc: "A plush bat on the shoulder softens any monster into a mascot.", materials: ["Plush bat toy", "Safety pin, to perch it on a shoulder"] }
+        lantern:    { label: "Flickering lantern", cost: [5, 15], phrase: "a flickering lantern", spook: 1, desc: "The lantern adds instant atmosphere — and means you can actually see the kerb.", materials: ["Battery-powered lantern"] },
+        candelabra: { label: "Silver candelabra", cost: [10, 25], phrase: "a silver candelabra", spook: 1, desc: "A candelabra raises any costume to 'haunted manor' by default.", materials: ["Thrifted or toy candelabra", "LED taper candles"] },
+        flask:      { label: "Bubbling flask", cost: [5, 12], phrase: "a bubbling flask", spook: 0, desc: "Carry the flask like it might explode. It won't. Probably.", materials: ["Glass-look flask", "Green food colouring", "A fizzy tablet for last-minute bubbles"] },
+        spellbook:  { label: "Ancient spell book", cost: [5, 15], phrase: "an ancient spell book", spook: 1, desc: "An old book with a covered spine opens doors — mostly library doors, but still.", materials: ["Old hardback book", "Brown paper for a new cover", "Gold pen for the title"] },
+        map:        { label: "Treasure map", cost: [1, 5], phrase: "a tea-stained treasure map", spook: 0, desc: "The map claims the garden is full of buried gold. Morale soars.", materials: ["Paper stained with cold tea", "Brown marker for aged edges (no real singeing)"] },
+        plushbat:   { label: "Plush bat sidekick", cost: [5, 12], phrase: "a plush bat sidekick", spook: -1, desc: "A plush bat on the shoulder softens any monster into a mascot.", materials: ["Plush bat toy", "Safety pin, to perch it on a shoulder"] }
       };
       var PALETTES = {
-        midnight:  { label: "Midnight & Crimson", colors: ["#241722", "#8e2434", "#e8dcc3"], note: "Black, blood-red and bone — the classic after-dark palette." },
-        pumpkin:   { label: "Pumpkin & Sage", colors: ["#e07b24", "#7d8f69", "#3a2a1c"], note: "Warm orange against mossy green: cosy, not kitsch." },
-        bone:      { label: "Bone & Charcoal", colors: ["#ece1cb", "#33302c", "#8a7a5f"], note: "Monochrome with a sepia edge — photographs beautifully." },
-        toxic:     { label: "Toxic Green", colors: ["#9fbf3a", "#22301a", "#e6f2c0"], note: "Acid green on near-black. Impossible to miss, in a good way." },
-        teal:      { label: "Dusty Teal & Gold", colors: ["#3f6b6a", "#c9a227", "#efe6d0"], note: "Sea-glass teal with old gold — made for ghosts of the sea." },
-        candycorn: { label: "Candy Corn", colors: ["#f2a007", "#f7ead2", "#8a4b12"], note: "Orange, cream and amber. Sweet, graphic, zero subtlety." }
+        midnight:  { label: "Midnight & Crimson", cost: [3, 10], colors: ["#241722", "#8e2434", "#e8dcc3"], note: "Black, blood-red and bone — the classic after-dark palette." },
+        pumpkin:   { label: "Pumpkin & Sage", cost: [3, 10], colors: ["#e07b24", "#7d8f69", "#3a2a1c"], note: "Warm orange against mossy green: cosy, not kitsch." },
+        bone:      { label: "Bone & Charcoal", cost: [3, 10], colors: ["#ece1cb", "#33302c", "#8a7a5f"], note: "Monochrome with a sepia edge — photographs beautifully." },
+        toxic:     { label: "Toxic Green", cost: [5, 12], colors: ["#9fbf3a", "#22301a", "#e6f2c0"], note: "Acid green on near-black. Impossible to miss, in a good way." },
+        teal:      { label: "Dusty Teal & Gold", cost: [5, 12], colors: ["#3f6b6a", "#c9a227", "#efe6d0"], note: "Sea-glass teal with old gold — made for ghosts of the sea." },
+        candycorn: { label: "Candy Corn", cost: [3, 10], colors: ["#f2a007", "#f7ead2", "#8a4b12"], note: "Orange, cream and amber. Sweet, graphic, zero subtlety." }
       };
       var SPOOK_LABELS = ["", "Barely a boo", "Mildly spooky", "Properly eerie", "Genuinely chilling", "Full haunted house"];
       var BUDGET_LABELS = ["Low budget", "Moderate budget", "Splurge"];
@@ -708,6 +717,10 @@
         return "~" + h + " hr" + (m ? " " + m + " min" : "");
       }
       function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+      function fmtMoney(n) { return "$" + n; }
+      function fmtRange(r) {
+        return r[0] === r[1] ? fmtMoney(r[0]) : fmtMoney(r[0]) + "–" + fmtMoney(r[1]);
+      }
 
       /* ---------------- Countdown ---------------- */
       (function () {
@@ -896,7 +909,8 @@
             b.className = "opt";
             b.setAttribute("aria-pressed", labState[g.key] === k ? "true" : "false");
             b.innerHTML = (g.key === "palette" ? swatchHTML(item.colors) : "") +
-              "<span>" + item.label + "</span>";
+              "<span>" + item.label + "</span>" +
+              '<small class="opt-cost">' + fmtRange(item.cost) + "</small>";
             b.addEventListener("click", function () {
               labState[g.key] = k;
               renderLabControls();
@@ -932,7 +946,17 @@
         var descParts = [base.desc];
         if (twist.desc) descParts.push(twist.desc);
         descParts.push(prop.desc);
+        var costs = [
+          { part: "Character", label: base.label, cost: base.cost },
+          { part: "Twist", label: twist.label, cost: twist.cost },
+          { part: "Prop", label: prop.label, cost: prop.cost },
+          { part: "Palette", label: pal.label, cost: pal.cost }
+        ];
+        var costTotal = costs.reduce(function (t, p) {
+          return [t[0] + p.cost[0], t[1] + p.cost[1]];
+        }, [0, 0]);
         return {
+          costs: costs, costTotal: costTotal,
           name: name, number: number, carrying: "…carrying " + prop.phrase + ".",
           desc: descParts.join(" "), spook: spook, time: time,
           budgetLabel: BUDGET_LABELS[budget], materials: materials,
@@ -951,6 +975,10 @@
         el("res-spook").innerHTML = spookHTML(b.spook);
         el("res-palette").innerHTML = swatchHTML(b.palette.colors) +
           "<span><strong>" + b.palette.label + ".</strong> " + b.palette.note + "</span>";
+        el("res-budget").innerHTML = b.costs.map(function (c) {
+          return "<li><span>" + c.part + ": " + c.label + "</span><span>" + fmtRange(c.cost) + "</span></li>";
+        }).join("") +
+          '<li class="budget-total"><span>Total estimate</span><span>' + fmtRange(b.costTotal) + "</span></li>";
         el("res-materials").innerHTML = b.materials.map(function (m) { return "<li>" + m + "</li>"; }).join("");
       }
 
@@ -987,8 +1015,14 @@
           "Build time: " + fmtTime(b.time) + " · " + b.budgetLabel +
             " · Spook level " + b.spook + "/5 (" + SPOOK_LABELS[b.spook] + ")",
           "",
+          "Estimated budget (USD, rough DIY estimate):"
+        ].concat(b.costs.map(function (c) {
+          return "- " + c.part + " (" + c.label + "): " + fmtRange(c.cost);
+        })).concat([
+          "Total estimate: " + fmtRange(b.costTotal),
+          "",
           "What I need:"
-        ].concat(b.materials.map(function (m) { return "- " + m; }));
+        ]).concat(b.materials.map(function (m) { return "- " + m; }));
         return lines.join("\n");
       }
 
