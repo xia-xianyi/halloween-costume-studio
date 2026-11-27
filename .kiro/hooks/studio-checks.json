@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Studio checks on save",
+      "description": "Replaces the legacy inline-script-syntax-check.kiro.hook. When the page, the README or a test changes, run the whole suite: inline-script syntax check, budget arithmetic, the 1,728 x 3 regression baseline, finder and share-link tests, seeded property tests and the copy-consistency check.",
+      "trigger": "PostFileSave",
+      "matcher": "(^|/)(index\\.html|README\\.md|tests/[^/]+\\.js|tests/fixtures/[^/]+\\.json)$",
+      "action": {
+        "type": "agent",
+        "prompt": "A studio file was just saved. From the repository root run `node --test tests/*.test.js` (Node 18+, no install). It includes `node .kiro/hooks/check-inline-script.js index.html`, so syntax errors show up as the first failing test. If everything passes, reply with one line giving the pass count. If anything fails, list each failing test name with its assertion message (for property tests, include the printed seed and case, and the command to reproduce it with PROPERTY_SEED). Never print lines of index.html longer than 200 characters: they are base64 images. Do not change tests/fixtures/lab-baseline.json to make a failure go away; a baseline mismatch means a lab creation changed, which must be either fixed or deliberately re-baselined with the user's agreement. Do not edit files unless the user asks."
+      }
+    }
+  ]
+}

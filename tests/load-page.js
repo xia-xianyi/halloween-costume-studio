@@ -29,7 +29,15 @@ function stubElement() {
   };
 }
 
-function loadPage(file) {
+// opts (all optional):
+//   hash:   location.hash at load time, e.g. '#lab=137&mode=thrift'
+//   now:    a Date to freeze `new Date()` at (for the countdown)
+//   random: a function to use as Math.random
+// The returned context also exposes ctx.__replaced (hashes passed to
+// history.replaceState) and ctx.__listeners (window event listeners).
+function loadPage(file, opts) {
+  if (file && typeof file === 'object') { opts = file; file = null; }
+  opts = opts || {};
   var html = fs.readFileSync(file || INDEX, 'utf8');
   var match = /<script>([\s\S]*?)<\/script>/.exec(html);
   if (!match) throw new Error('No inline <script> found in ' + (file || INDEX));
@@ -42,13 +50,33 @@ function loadPage(file) {
     body: stubElement(),
     execCommand: function () { return true; }
   };
+  document.documentElement = stubElement();
+  var hash = opts.hash || '';
+  var replaced = [];
+  var listeners = {};
   var ctx = {
     document: document, navigator: {}, console: console,
     setInterval: function () { return 0; }, clearInterval: function () {}, setTimeout: function () { return 0; },
-    matchMedia: function () { return { matches: false }; }
+    matchMedia: function () { return { matches: false }; },
+    location: {
+      get hash() { return hash; },
+      set hash(v) { hash = v; },
+      get href() { return 'https://studio.example/index.html' + hash; }
+    },
+    history: { replaceState: function (s, t, url) { replaced.push(url); hash = url; } },
+    addEventListener: function (type, fn) { (listeners[type] = listeners[type] || []).push(fn); },
+    __replaced: replaced,
+    __listeners: listeners
   };
   ctx.window = ctx;
   vm.createContext(ctx);
+  var prelude = '';
+  if (opts.now) {
+    ctx.__now = opts.now.getTime();
+    prelude += 'Date = (function (R) { function D() { return arguments.length ? new (Function.prototype.bind.apply(R, [null].concat([].slice.call(arguments))))() : new R(__now); } D.prototype = R.prototype; D.now = function () { return __now; }; return D; })(Date);\n';
+  }
+  if (opts.random) { ctx.__random = opts.random; prelude += 'Math.random = __random;\n'; }
+  if (prelude) vm.runInContext(prelude, ctx);
   vm.runInContext(match[1], ctx, { filename: file || INDEX });
   return ctx;
 }

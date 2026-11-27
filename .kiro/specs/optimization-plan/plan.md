@@ -223,6 +223,13 @@ Status: draft for review. Written 27 November 2026 after reading `index.html` (a
 - Genuine Kiro use: passes today (`.kiro/` is committed with steering, specs and a hook). K6 removes the one claim a reviewer could call false.
 
 ## 7. Decisions needed from the owner
+
+> **Decided 27 Nov 2026:**
+> 1. GitHub Pages: **no**. Item 11 / P1 is dropped, and no repository settings change.
+> 2. Image extraction (D4): **no**. The page stays one self-contained file, and the `og:image` stays a data URI.
+> 3. Kiro section wording: **yes**, but only for verifiable claims, each linked to the real files.
+>
+> The original questions follow for the record.
 1. **Enable GitHub Pages and set the repo homepage (P1)?** This publishes the site publicly. I will not do it without a yes.
 2. **Image extraction (D4)?** It cuts the page to under 1 MB but ends the "single self-contained file" claim. It is deferred unless you want it.
 3. **Kiro section wording (K6).** I plan to state that the first cut was hand-built. Say if you would rather phrase the history differently, but I recommend against keeping "started as a written spec".
@@ -244,3 +251,22 @@ The order follows dependencies: specs before code, features before the tests and
 11. **P1 deploy:** only if the owner says yes. Then switch `og:image` to the absolute URL of a committed `docs/og.jpg`.
 
 Deferred to a later session: I5 mobile peek bar, I6/N4 closet-first, D4 image extraction, D5 card markup.
+
+## 9. Session outcome (27 Nov 2026)
+
+| # | Item | Status |
+| --- | --- | --- |
+| 1 | K1 specs | Done: `costume-finder`, `shareable-creations`, `haunted-studio` (the planned `lights-out-theme` was merged into `haunted-studio`, which also covers D2, D3 and I4). Written before the code; tasks ticked with verification notes. |
+| 2 | I1 + N3 finder | Done. |
+| 3 | I2 share links | Done. Deviation: `navigator.share` gets no separate `url`, because the plan text already ends with the link and some share targets would paste it twice. |
+| 4 | D2 + D3 portrait, materialise | Done. |
+| 5 | D1 Lights out | Done. The label stays "Lights out" with `aria-pressed` (the accessible toggle pattern) rather than flipping to "Lights on". The crescent is CSS-drawn after the glyph failed under fallback fonts. |
+| 6 | I4 + I3 a11y, countdown | Done. |
+| 7 | K2 + K3 + K5 | Done. The legacy `.kiro.hook` was migrated to the v1 schema (`.kiro/hooks/studio-checks.json`). The v1 schema has no manual trigger, so the planned `capture-screenshots` manual hook became a manual steering doc (`/capture-screenshots`), as Kiro's docs recommend. |
+| 8 | K4 + P5 Playwright | Done: `.kiro/settings/mcp.json` and five screenshots in `docs/screenshots/`. The run found and fixed a short deep-link scroll and the missing-glyph moon. |
+| 9 | K6 Kiro section | Done. Claims checked against `git log`: the first four commits (`ba5c58c`…`be6f495`) were by the owner, and every non-merge commit since is by Kiro Agent. |
+| 10 | P2–P4 docs | Done: README, `docs/demo-script.md`, `docs/devpost-writeup.md`. |
+| 11 | P1 deploy | Dropped (owner decision). |
+| extra | Regression and property tests | Added `tests/lab-regression.test.js` (all 1,728 × 3 against a baseline captured from `main` at 2e9c8c4 before any change) and `tests/lab-properties.test.js` (seeded, `node:test` only). |
+
+Still deferred: I5 mobile peek bar, I6/N4 closet-first, D5 card markup. D4 and P1 are declined.

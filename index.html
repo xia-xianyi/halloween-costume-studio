@@ -32,8 +32,25 @@
         --shadow: 0 14px 34px rgba(74, 44, 14, 0.14);
         color-scheme: light;
       }
+      /* Dark tokens, twice: once for the OS setting (no toggle pressed, or no JS),
+         once for the "Lights out" toggle. Keep the two blocks identical. */
+      :root[data-theme="dark"] {
+        --bg: #17100a;
+        --bg-deep: #100a06;
+        --surface: #251810;
+        --surface-2: #2f1f12;
+        --ink: #f4e8d2;
+        --muted: #c2ab8d;
+        --accent: #f07f2e;
+        --accent-strong: #ffa257;
+        --accent-soft: #40260f;
+        --sage: #a9bd97;
+        --line: #42301d;
+        --shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+        color-scheme: dark;
+      }
       @media (prefers-color-scheme: dark) {
-        :root {
+        :root:not([data-theme="light"]) {
           --bg: #17100a;
           --bg-deep: #100a06;
           --surface: #251810;
@@ -73,12 +90,30 @@
         transition: top 0.15s ease;
       }
       .skip-link:focus-visible { top: 12px; }
+      .sr-only {
+        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+        overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+      }
+      .lights-toggle {
+        position: absolute; top: 14px; right: 16px; z-index: 15;
+        display: inline-flex; align-items: center; gap: 8px;
+        min-height: 44px; padding: 8px 18px; border-radius: 999px;
+        border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
+        font-weight: 700; font-size: 0.92rem;
+      }
+      .lights-toggle:hover { border-color: var(--accent); }
+      .lights-toggle[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-strong); }
+      /* a crescent drawn in CSS, so it never depends on a font having the glyph */
+      .lights-toggle .moon {
+        width: 15px; height: 15px; border-radius: 50%; flex: none;
+        box-shadow: inset -5px -2px 0 0 currentColor; transform: rotate(-25deg);
+      }
       button { font: inherit; cursor: pointer; }
       :focus-visible { outline: 2px dashed var(--accent); outline-offset: 3px; }
       .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
 
       /* ---------- Hero ---------- */
-      .hero { padding: 44px 0 30px; }
+      .hero { padding: 76px 0 30px; } /* room for the Lights out toggle on small screens */
       .hero-grid { display: grid; gap: 34px; align-items: center; }
       @media (min-width: 880px) {
         .hero-grid { grid-template-columns: 1.05fr 0.95fr; gap: 48px; }
@@ -102,6 +137,7 @@
       }
       .countdown strong { font-family: "DM Serif Display", Georgia, serif; font-size: 1.7rem; color: var(--accent-strong); }
       .count-tick { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.95rem; }
+      [hidden] { display: none !important; }
       .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
       .hero-stats {
         display: flex; flex-wrap: wrap; gap: 10px 30px; margin: 28px 0 0;
@@ -183,6 +219,20 @@
       .dots { display: inline-flex; gap: 4px; }
       .dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--line); display: block; }
       .dots i.on { background: var(--accent); }
+      /* Lights out: the scarier the build, the brighter its dots burn */
+      [data-theme="dark"] .dots.lvl-3 i.on { box-shadow: 0 0 4px var(--accent); }
+      [data-theme="dark"] .dots.lvl-4 i.on { box-shadow: 0 0 7px var(--accent); }
+      [data-theme="dark"] .dots.lvl-5 i.on { box-shadow: 0 0 10px var(--accent-strong); animation: haunt-pulse 2.4s ease-in-out infinite; }
+      [data-theme="dark"] .countdown strong { text-shadow: 0 0 14px rgba(240, 127, 46, 0.5); animation: candle 3.2s ease-in-out infinite; }
+      @keyframes haunt-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+      @keyframes candle {
+        0%, 100% { opacity: 1; text-shadow: 0 0 14px rgba(240, 127, 46, 0.5); }
+        40% { opacity: 0.86; text-shadow: 0 0 8px rgba(240, 127, 46, 0.35); }
+        60% { opacity: 0.95; text-shadow: 0 0 18px rgba(240, 127, 46, 0.6); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        [data-theme="dark"] .dots.lvl-5 i.on, [data-theme="dark"] .countdown strong { animation: none; }
+      }
       .card .view { margin-top: 12px; font-weight: 700; color: var(--accent-strong); font-size: 0.95rem; }
       .empty-note { color: var(--muted); font-style: italic; padding: 18px 0; }
       .rail-count { color: var(--muted); font-size: 0.92rem; margin: -8px 0 18px; }
@@ -191,6 +241,17 @@
       .lab-band { background: var(--bg-deep); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
       .lab-grid { display: grid; gap: 26px; }
       @media (min-width: 940px) { .lab-grid { grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; } }
+      .finder {
+        background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+        padding: 18px 20px; margin-bottom: 26px;
+      }
+      .finder h3 { font-size: 1.05rem; font-family: "Public Sans", sans-serif; font-weight: 700; margin: 0 0 12px; }
+      .finder h3 small { color: var(--muted); font-weight: 400; }
+      .finder-fields { display: flex; flex-wrap: wrap; gap: 10px 16px; }
+      .fit-count { margin: 14px 0 0; font-weight: 700; }
+      .fit-count.none { color: var(--accent-strong); }
+      .fit-fix { display: flex; flex-wrap: wrap; gap: 9px; }
+      .fit-fix:not(:empty) { margin-top: 10px; }
       .opt-group { margin-bottom: 24px; }
       .opt-group h3 { font-size: 1.05rem; font-family: "Public Sans", sans-serif; font-weight: 700; margin: 0 0 10px; }
       .opt-group h3 small { color: var(--muted); font-weight: 400; }
@@ -211,6 +272,20 @@
         padding: 26px; box-shadow: var(--shadow);
       }
       @media (min-width: 940px) { .result { position: sticky; top: 18px; } }
+      .res-portrait {
+        position: relative; margin: 0 0 18px; padding: 4px;
+        border: 6px solid var(--line); border-radius: 16px; background: var(--surface-2);
+        transition: border-color 0.2s ease, background-color 0.2s ease;
+      }
+      .res-portrait img {
+        width: 100%; aspect-ratio: 16 / 9; max-height: 230px;
+        object-fit: cover; object-position: center 18%; border-radius: 9px;
+      }
+      .twist-badge {
+        position: absolute; top: 14px; left: 14px;
+        background: var(--accent); color: #fff8ee; font-size: 0.8rem; font-weight: 700;
+        letter-spacing: 0.04em; padding: 4px 12px; border-radius: 999px;
+      }
       .result .kicker { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--sage); margin: 0 0 6px; }
       .result h3 { font-size: clamp(1.7rem, 4vw, 2.2rem); line-height: 1.12; margin: 0 0 4px; }
       .result .carrying { font-style: italic; color: var(--muted); margin: 0 0 12px; }
@@ -229,14 +304,16 @@
       .materials li { margin-bottom: 5px; break-inside: avoid; }
       .result-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
       .copy-status { min-height: 1.5em; margin: 10px 0 0; font-size: 0.92rem; color: var(--sage); font-weight: 600; }
-      @keyframes conjure {
-        0% { transform: scale(1) rotate(0deg); }
-        25% { transform: scale(0.985) rotate(-0.5deg); }
-        55% { transform: scale(1.012) rotate(0.5deg); }
-        100% { transform: scale(1) rotate(0deg); }
+      /* Summon: the new costume materialises out of the fog */
+      @keyframes materialise {
+        from { opacity: 0; filter: blur(6px); }
+        to { opacity: 1; filter: none; }
       }
-      .result.conjuring { animation: conjure 0.55s ease; border-color: var(--accent); }
-      @media (prefers-reduced-motion: reduce) { .result.conjuring { animation: none; } }
+      .result.conjuring { border-color: var(--accent); }
+      .result.conjuring #res-name, .result.conjuring .res-portrait img { animation: materialise 0.6s ease-out; }
+      @media (prefers-reduced-motion: reduce) {
+        .result.conjuring #res-name, .result.conjuring .res-portrait img { animation: none; }
+      }
 
       /* ---------- Built with Kiro ---------- */
       .kiro-band { background: var(--surface); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
@@ -245,6 +322,7 @@
       @media (min-width: 1080px) { .kiro-grid { grid-template-columns: repeat(4, 1fr); } }
       .kiro-step h3 { font-size: 1.25rem; margin: 0 0 6px; }
       .kiro-step p { margin: 0; color: var(--muted); font-size: 0.97rem; }
+      .kiro-step a { color: var(--accent-strong); font-weight: 700; text-underline-offset: 3px; }
       .kiro-step .step-tag {
         display: inline-block; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.05em;
         color: var(--accent-strong); background: var(--accent-soft);
@@ -292,7 +370,7 @@
       @media print {
         body { background: #fff; color: #000; font-size: 12pt; }
         .hero-figure, .filters, .toolbar, .skip-link, .hero-actions, .result-actions, .copy-status,
-        dialog, footer { display: none !important; }
+        .lights-toggle, .finder, .res-portrait, dialog, footer { display: none !important; }
         .hero { padding: 12px 0 0; }
         section { padding: 16px 0; }
         .card, .result { box-shadow: none; break-inside: avoid; }
@@ -303,6 +381,7 @@
   </head>
   <body>
     <a class="skip-link" href="#rail">Skip to the costumes</a>
+    <button class="lights-toggle" id="lights" type="button" aria-pressed="false"><span class="moon" aria-hidden="true"></span> Lights out</button>
     <main>
       <!-- Hero -->
       <div class="hero">
@@ -315,6 +394,7 @@
             <div class="hero-actions">
               <a class="btn btn-solid" href="#rail">Browse the costumes</a>
               <a class="btn btn-ghost" href="#lab">Open the costume lab</a>
+              <button class="btn btn-solid" id="tonight" type="button" hidden>Find a costume for tonight</button>
             </div>
             <div class="hero-stats" aria-label="Studio at a glance">
               <div><strong>8</strong><span>ready-made builds</span></div>
@@ -363,8 +443,50 @@
             <p>Pick a character, twist it, arm it with a prop and dress it in a palette. The studio stitches the plan together — or let fate decide and summon one at random.</p>
           </div>
           <div class="lab-grid">
-            <div id="lab-controls"></div>
-            <article class="result" id="result" aria-live="polite">
+            <div class="lab-left">
+              <form class="finder" id="finder" aria-labelledby="finder-title">
+                <h3 id="finder-title">Find one that fits <small>— your budget, your clock, your nerve</small></h3>
+                <div class="finder-fields">
+                  <label class="sort-label" for="fit-budget">Spend at most
+                    <select id="fit-budget">
+                      <option value="">Any budget</option>
+                      <option value="25">$25</option>
+                      <option value="40">$40</option>
+                      <option value="60">$60</option>
+                      <option value="100">$100</option>
+                      <option value="150">$150</option>
+                    </select>
+                  </label>
+                  <label class="sort-label" for="fit-time">Ready in
+                    <select id="fit-time">
+                      <option value="">Any time</option>
+                      <option value="15">15 min</option>
+                      <option value="30">30 min</option>
+                      <option value="45">45 min</option>
+                      <option value="60">1 hr</option>
+                      <option value="90">1 hr 30</option>
+                    </select>
+                  </label>
+                  <label class="sort-label" for="fit-spook">Fright
+                    <select id="fit-spook">
+                      <option value="">Any fright</option>
+                      <option value="gentle">Gentle (1–2)</option>
+                      <option value="eerie">Eerie (3)</option>
+                      <option value="terrifying">Terrifying (4–5)</option>
+                    </select>
+                  </label>
+                </div>
+                <p class="fit-count" id="fit-count" role="status"></p>
+                <div class="fit-fix" id="fit-fix"></div>
+              </form>
+              <div id="lab-controls"></div>
+            </div>
+            <article class="result" id="result">
+              <figure class="res-portrait" id="res-figure">
+                <img id="res-img" alt="" decoding="async" />
+                <span class="twist-badge" id="res-twist" hidden></span>
+              </figure>
+              <p class="sr-only" id="res-announce" role="status"></p>
               <p class="kicker">Your creation</p>
               <h3 id="res-name">—</h3>
               <p class="carrying" id="res-carrying"></p>
@@ -381,6 +503,7 @@
               <div class="result-actions">
                 <button class="btn btn-solid" id="summon" type="button">Summon a random costume</button>
                 <button class="btn btn-ghost" id="share" type="button">Share my plan</button>
+                <button class="btn btn-ghost" id="copy-link" type="button">Copy link to this costume</button>
                 <button class="btn btn-ghost" id="copy" type="button">Copy my costume plan</button>
                 <button class="btn btn-ghost" id="download" type="button">Download plan (.txt)</button>
               </div>
@@ -395,28 +518,28 @@
         <div class="wrap">
           <div class="section-head">
             <h2>Built with Kiro</h2>
-            <p>This studio is a Kiroween 2026 entry in the Costume Contest category. Kiro was the workshop, not just the typewriter — here's how the build actually went.</p>
+            <p>This studio is a Kiroween 2026 entry in the Costume Contest category. Every claim below links to the file in the repository that backs it.</p>
           </div>
           <div class="kiro-grid">
             <div class="kiro-step">
-              <span class="step-tag">Spec first</span>
-              <h3>Planned as a spec, not a sketch</h3>
-              <p>The page started as a written spec — eight gallery builds with materials and methods, a four-part mix-and-match lab, and a hard rule that every number shown (spook level, build time, budget) had to be computed from the costume data, never typed in twice.</p>
+              <span class="step-tag">Hand-built, then Kiro</span>
+              <h3>A hand-made first cut, then Kiro for every change</h3>
+              <p>The gallery, the lab, the countdown and the licence were hand-built in the first four commits. Every change since, from the steering docs onwards, was made by Kiro on a branch and merged through a pull request. <a href="https://github.com/xia-xianyi/halloween-costume-studio/commits/main">See the commit history</a>.</p>
             </div>
             <div class="kiro-step">
-              <span class="step-tag">Steering &amp; iteration</span>
-              <h3>Steered toward one warm palette</h3>
-              <p>Steering rules kept every pass on the same brief: cream and pumpkin tones, serif display type, no gradients, no stock-photo look. The nine illustrations were generated to that palette so the rail, the hero and the detail views all read as one studio.</p>
+              <span class="step-tag">Steering</span>
+              <h3>Steering that knows the data model</h3>
+              <p>Always-on steering describes the data tables, the budget data flow, the accessibility and print rules, and the voice. A file-matched doc adds the testing rules when a test is open, and manual docs hold the pitch and the screenshot routine. <a href="https://github.com/xia-xianyi/halloween-costume-studio/tree/main/.kiro/steering">Read the steering</a>.</p>
             </div>
             <div class="kiro-step">
-              <span class="step-tag">The lab engine</span>
-              <h3>1,728 costumes from 26 parts</h3>
-              <p>The lab composes 8 characters × 6 twists × 6 props × 6 palettes. Kiro built it as small data tables plus one composer function, so spook, time and budget merge arithmetically and the materials list deduplicates itself — adding a new twist takes one object, not a rewrite.</p>
+              <span class="step-tag">Specs</span>
+              <h3>One spec per feature since the first cut</h3>
+              <p>Budget estimate, purchase modes, costume finder, shareable creations and the haunted studio each have requirements, a design with its trade-offs and a ticked task list — plus the optimisation plan that ordered the work. <a href="https://github.com/xia-xianyi/halloween-costume-studio/tree/main/.kiro/specs">Read the specs</a>.</p>
             </div>
             <div class="kiro-step">
-              <span class="step-tag">Checked end to end</span>
-              <h3>Verified like a final fitting</h3>
-              <p>Every pass ended with the same checks as the list below: keyboard-only navigation through the rail, the dialog and the lab, a dark-mode and reduced-motion pass, and a print stylesheet so any plan survives the trip to the fabric shop.</p>
+              <span class="step-tag">Hooks &amp; checks</span>
+              <h3>Checked by the numbers on every save</h3>
+              <p>A save hook runs the test suite: all 1,728 creations in all three purchase modes against a pre-change baseline, seeded property tests for the budget rules, and a check that the numbers in this copy match the data. Screenshots come from Playwright through MCP. <a href="https://github.com/xia-xianyi/halloween-costume-studio/tree/main/tests">See the tests</a> and <a href="https://github.com/xia-xianyi/halloween-costume-studio/tree/main/.kiro/hooks">the hook</a>.</p>
             </div>
           </div>
         </div>
@@ -466,7 +589,7 @@
     <footer>
       <div class="wrap">
         <span>Halloween Costume Studio — stitched together for Kiroween 2026.</span>
-        <span>Next Halloween: Sunday, 31 October 2027.</span>
+        <span id="footer-date">Next Halloween: Sunday 31 October 2027.</span>
       </div>
     </footer>
 
@@ -712,7 +835,7 @@
       /* ---------------- Helpers ---------------- */
       function el(id) { return document.getElementById(id); }
       function dotsHTML(n) {
-        var s = '<span class="dots" aria-hidden="true">';
+        var s = '<span class="dots lvl-' + n + '" aria-hidden="true">';
         for (var i = 1; i <= 5; i++) s += '<i class="' + (i <= n ? "on" : "") + '"></i>';
         return s + "</span>";
       }
@@ -730,22 +853,49 @@
         return r[0] === r[1] ? fmtMoney(r[0]) : fmtMoney(r[0]) + "–" + fmtMoney(r[1]);
       }
 
+      /* 1728 -> "1,728" */
+      function fmtInt(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+      function prefersCalm() {
+        return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+      }
+
       /* ---------------- Countdown ---------------- */
+      var DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      function isHalloween(now) { return now.getMonth() === 9 && now.getDate() === 31; }
+      /* 31 October of this year (local midnight), or of next year once 1 November has begun */
+      function nextHalloween(now) {
+        var y = now.getFullYear();
+        return now >= new Date(y, 10, 1) ? new Date(y + 1, 9, 31) : new Date(y, 9, 31);
+      }
+      function fmtHalloween(d) { return DAY_NAMES[d.getDay()] + " 31 October " + d.getFullYear(); }
       (function () {
-        var target = new Date(2027, 9, 31); // 31 October 2027, local midnight
         function pad(n) { return (n < 10 ? "0" : "") + n; }
+        var tonightShown = false;
         function tick() {
-          var diff = Math.max(0, target - new Date());
-          var days = Math.floor(diff / 86400000);
-          var rest = diff - days * 86400000;
-          var h = Math.floor(rest / 3600000);
-          var m = Math.floor((rest % 3600000) / 60000);
-          var s = Math.floor((rest % 60000) / 1000);
-          el("count-num").textContent = days;
-          var label = (days === 1 ? "day" : "days") +
-            " until the next Halloween — Sunday 31 October 2027. Plenty of sewing time.";
-          if (el("count-label").textContent !== label) el("count-label").textContent = label;
-          el("count-tick").textContent = "· " + pad(h) + ":" + pad(m) + ":" + pad(s) + " and counting";
+          var now = new Date();
+          var target = nextHalloween(now);
+          if (isHalloween(now)) {
+            el("count-num").textContent = "Tonight";
+            var party = "It's Halloween — tonight's the night. Need something fast?";
+            if (el("count-label").textContent !== party) el("count-label").textContent = party;
+            el("count-tick").textContent = "";
+            if (!tonightShown) { el("tonight").hidden = false; tonightShown = true; }
+          } else {
+            var diff = Math.max(0, target - now);
+            var days = Math.floor(diff / 86400000);
+            var rest = diff - days * 86400000;
+            var h = Math.floor(rest / 3600000);
+            var m = Math.floor((rest % 3600000) / 60000);
+            var s = Math.floor((rest % 60000) / 1000);
+            el("count-num").textContent = days;
+            var label = (days === 1 ? "day" : "days") +
+              " until the next Halloween — " + fmtHalloween(target) + ". Plenty of sewing time.";
+            if (el("count-label").textContent !== label) el("count-label").textContent = label;
+            el("count-tick").textContent = "· " + pad(h) + ":" + pad(m) + ":" + pad(s) + " and counting";
+            if (tonightShown) { el("tonight").hidden = true; tonightShown = false; }
+          }
+          var foot = "Next Halloween: " + fmtHalloween(target) + ".";
+          if (el("footer-date").textContent !== foot) el("footer-date").textContent = foot;
         }
         tick();
         setInterval(tick, 1000);
@@ -876,13 +1026,11 @@
       el("d-lab").addEventListener("click", function () {
         if (dialogCostume && BASES[dialogCostume.id]) {
           labState.base = dialogCostume.id;
-          renderLabControls();
-          renderResult();
+          refreshLab({ sync: true });
           el("copy-status").textContent = "";
         }
         dialog.close();
-        var calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        document.getElementById("lab").scrollIntoView({ behavior: calm ? "auto" : "smooth" });
+        el("lab").scrollIntoView({ behavior: prefersCalm() ? "auto" : "smooth" });
       });
       dialog.addEventListener("click", function (ev) {
         var r = dialog.getBoundingClientRect();
@@ -897,12 +1045,15 @@
         { key: "prop", title: "Prop", hint: "carried all night — choose wisely", data: PROPS },
         { key: "palette", title: "Palette", hint: "the colour story", data: PALETTES }
       ];
+      /* gallery costume by id, for the lab result portrait */
+      var COSTUME_BY_ID = {};
+      COSTUMES.forEach(function (c) { COSTUME_BY_ID[c.id] = c; });
 
       function currentMode() { return BUDGET_MODES[labState.mode]; }
       function fmtMultiplier(m) { return "×" + m.toFixed(1); }
-      /* scale a [min, max] cost by the selected mode, rounded to whole USD */
-      function adjustCost(r) {
-        var m = currentMode().multiplier;
+      /* scale a [min, max] cost by a purchase mode (default: the selected one), rounded to whole USD */
+      function adjustCost(r, mode) {
+        var m = (mode || currentMode()).multiplier;
         return [Math.round(r[0] * m), Math.round(r[1] * m)];
       }
 
@@ -933,8 +1084,7 @@
           b.innerHTML = innerFn(item);
           b.addEventListener("click", function () {
             labState[g.key] = k;
-            renderLabControls();
-            renderResult();
+            refreshLab({ sync: true });
             /* the options are rebuilt, so hand keyboard focus back to the pressed one */
             var again = el("lab-controls").querySelector('[data-group="' + g.key + '"][data-key="' + k + '"]');
             if (again) again.focus();
@@ -965,13 +1115,37 @@
 
       function indexOfKey(obj, k) { return Object.keys(obj).indexOf(k); }
 
-      function currentBuild() {
-        var base = BASES[labState.base], twist = TWISTS[labState.twist],
-            prop = PROPS[labState.prop], pal = PALETTES[labState.palette];
-        var number = ((indexOfKey(BASES, labState.base) * 6 +
-          indexOfKey(TWISTS, labState.twist)) * 6 +
-          indexOfKey(PROPS, labState.prop)) * 6 +
-          indexOfKey(PALETTES, labState.palette) + 1;
+      /* mixed-radix index over GROUPS (base, twist, prop, palette) using the table sizes, 1..TOTAL_COMBOS */
+      function creationNumber(s) {
+        var n = 0;
+        GROUPS.forEach(function (g) { n = n * Object.keys(g.data).length + indexOfKey(g.data, s[g.key]); });
+        return n + 1;
+      }
+
+      /* every creation in creation-number order, so ALL_COMBOS[n - 1] is creation n */
+      var ALL_COMBOS = (function () {
+        var out = [{}];
+        GROUPS.forEach(function (g) {
+          var next = [];
+          out.forEach(function (partial) {
+            Object.keys(g.data).forEach(function (k) {
+              var c = {};
+              for (var p in partial) c[p] = partial[p];
+              c[g.key] = k;
+              next.push(c);
+            });
+          });
+          out = next;
+        });
+        return out;
+      })();
+      var TOTAL_COMBOS = ALL_COMBOS.length;
+
+      /* compose one creation from a state { base, twist, prop, palette, mode } */
+      function buildFor(s) {
+        var base = BASES[s.base], twist = TWISTS[s.twist],
+            prop = PROPS[s.prop], pal = PALETTES[s.palette], mode = BUDGET_MODES[s.mode];
+        var number = creationNumber(s);
         var name = (twist.name ? twist.name + " " : "") + base.label;
         var spook = clamp(base.spook + twist.spook + prop.spook, 1, 5);
         var time = Math.max(5, base.time + twist.time);
@@ -987,31 +1161,45 @@
         if (twist.desc) descParts.push(twist.desc);
         descParts.push(prop.desc);
         var costs = [
-          { part: "Character", label: base.label, cost: adjustCost(base.cost) },
-          { part: "Twist", label: twist.label, cost: adjustCost(twist.cost) },
-          { part: "Prop", label: prop.label, cost: adjustCost(prop.cost) },
-          { part: "Palette", label: pal.label, cost: adjustCost(pal.cost) }
+          { part: "Character", label: base.label, cost: adjustCost(base.cost, mode) },
+          { part: "Twist", label: twist.label, cost: adjustCost(twist.cost, mode) },
+          { part: "Prop", label: prop.label, cost: adjustCost(prop.cost, mode) },
+          { part: "Palette", label: pal.label, cost: adjustCost(pal.cost, mode) }
         ];
         /* total = sum of the adjusted parts, so the rows always add up */
         var costTotal = costs.reduce(function (t, p) {
           return [t[0] + p.cost[0], t[1] + p.cost[1]];
         }, [0, 0]);
         return {
-          costs: costs, costTotal: costTotal, mode: currentMode(),
+          costs: costs, costTotal: costTotal, mode: mode,
           name: name, number: number, carrying: "…carrying " + prop.phrase + ".",
           desc: descParts.join(" "), spook: spook, time: time,
           budgetLabel: BUDGET_LABELS[budget], materials: materials,
           palette: pal
         };
       }
+      function currentBuild() { return buildFor(labState); }
 
       function renderResult() {
         var b = currentBuild();
+        var costume = COSTUME_BY_ID[labState.base];
+        var img = el("res-img");
+        if (costume && img.getAttribute("data-for") !== costume.id) {
+          img.src = costume.img;
+          img.alt = "Base illustration: " + costume.alt;
+          img.setAttribute("data-for", costume.id);
+        }
+        /* the palette frames the portrait: first colour as the border, second as the inner ring */
+        el("res-figure").style.borderColor = b.palette.colors[0];
+        el("res-figure").style.backgroundColor = b.palette.colors[1];
+        var badge = el("res-twist");
+        badge.hidden = labState.twist === "none";
+        badge.textContent = badge.hidden ? "" : TWISTS[labState.twist].label;
         el("res-name").textContent = b.name;
         el("res-carrying").textContent = b.carrying;
         el("res-desc").textContent = b.desc;
         el("res-meta").innerHTML =
-          "<span>Creation № " + b.number + " of 1,728</span>" +
+          "<span>Creation № " + b.number + " of " + fmtInt(TOTAL_COMBOS) + "</span>" +
           "<span>" + fmtTime(b.time) + " to build</span><span>" + b.budgetLabel + "</span>";
         el("res-spook").innerHTML = spookHTML(b.spook);
         el("res-palette").innerHTML = swatchHTML(b.palette.colors) +
@@ -1023,6 +1211,146 @@
         }).join("") +
           '<li class="budget-total"><span>Total estimate</span><span>' + fmtRange(b.costTotal) + "</span></li>";
         el("res-materials").innerHTML = b.materials.map(function (m) { return "<li>" + m + "</li>"; }).join("");
+        /* one short line for screen readers instead of re-reading the whole panel */
+        el("res-announce").textContent = b.name + ". Creation " + b.number + " of " + fmtInt(TOTAL_COMBOS) +
+          ". Total " + fmtRange(b.costTotal) + ", " + b.mode.label + ".";
+      }
+
+      /* ---------------- Costume finder ---------------- */
+      var FIT_SPOOK = {
+        gentle: { label: "Gentle", range: [1, 2] },
+        eerie: { label: "Eerie", range: [3, 3] },
+        terrifying: { label: "Terrifying", range: [4, 5] }
+      };
+      /* null / "" = no limit */
+      var fitLimits = { budget: null, time: null, spook: "" };
+
+      function limitsSet(l) {
+        l = l || fitLimits;
+        return l.budget !== null || l.time !== null || !!l.spook;
+      }
+      /* the top end of the total must fit the budget, so a $25 plan never costs $26 */
+      function fits(b, l) {
+        l = l || fitLimits;
+        if (l.budget !== null && b.costTotal[1] > l.budget) return false;
+        if (l.time !== null && b.time > l.time) return false;
+        if (l.spook) {
+          var r = FIT_SPOOK[l.spook].range;
+          if (b.spook < r[0] || b.spook > r[1]) return false;
+        }
+        return true;
+      }
+      function withMode(c, modeKey) {
+        return { base: c.base, twist: c.twist, prop: c.prop, palette: c.palette, mode: modeKey };
+      }
+      function fittingCombos(modeKey, l) {
+        modeKey = modeKey || labState.mode;
+        l = l || fitLimits;
+        return ALL_COMBOS.filter(function (c) { return fits(buildFor(withMode(c, modeKey)), l); });
+      }
+      function readLimits() {
+        function num(id) { var v = el(id).value; return v ? parseInt(v, 10) : null; }
+        fitLimits = { budget: num("fit-budget"), time: num("fit-time"), spook: el("fit-spook").value || "" };
+      }
+
+      function renderFinder() {
+        var count = el("fit-count"), fix = el("fit-fix"), summon = el("summon");
+        var total = fmtInt(TOTAL_COMBOS);
+        fix.innerHTML = "";
+        count.className = "fit-count";
+        if (!limitsSet()) {
+          count.textContent = "All " + total + " creations are in play. Set a limit and the studio narrows them down.";
+          summon.textContent = "Summon a random costume";
+          summon.disabled = false;
+          return;
+        }
+        var n = fittingCombos().length;
+        summon.textContent = "Summon one that fits";
+        summon.disabled = n === 0;
+        if (n > 0) {
+          count.textContent = fmtInt(n) + " of " + total + " creations fit in " + currentMode().label + " mode.";
+          return;
+        }
+        count.className = "fit-count none";
+        var rescues = [];
+        Object.keys(BUDGET_MODES).forEach(function (k) {
+          if (k === labState.mode) return;
+          var m = fittingCombos(k).length;
+          if (m) rescues.push({ key: k, n: m });
+        });
+        count.textContent = rescues.length
+          ? "Nothing fits in " + currentMode().label + " mode — the studio has gone quiet. Shop differently and it wakes up:"
+          : "Nothing fits in any purchase mode — the studio has gone quiet. Loosen one of the limits.";
+        rescues.forEach(function (r) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "btn btn-ghost btn-small";
+          b.setAttribute("data-mode", r.key);
+          b.textContent = "Switch to " + BUDGET_MODES[r.key].label + ": " + fmtInt(r.n) + " fit";
+          b.addEventListener("click", function () {
+            labState.mode = r.key;
+            refreshLab({ sync: true });
+            el("summon").focus();
+          });
+          fix.appendChild(b);
+        });
+      }
+
+      ["fit-budget", "fit-time", "fit-spook"].forEach(function (id) {
+        el(id).addEventListener("change", function () { readLimits(); renderFinder(); });
+      });
+      el("finder").addEventListener("submit", function (ev) { ev.preventDefault(); });
+
+      /* ---------------- Shareable creations ---------------- */
+      /* "#lab=137&mode=thrift" addresses creation 137 in Thrift mode */
+      function labHash(s) {
+        s = s || labState;
+        return "#lab=" + creationNumber(s) + "&mode=" + s.mode;
+      }
+      function parseLabHash(hash) {
+        var m = /^#lab=(\d{1,4})(?:&mode=([a-z]+))?$/.exec(hash || "");
+        if (!m) return null;
+        var n = parseInt(m[1], 10);
+        if (n < 1 || n > TOTAL_COMBOS) return null;
+        if (m[2] && !Object.prototype.hasOwnProperty.call(BUDGET_MODES, m[2])) return null;
+        var c = ALL_COMBOS[n - 1];
+        return { base: c.base, twist: c.twist, prop: c.prop, palette: c.palette, mode: m[2] || null };
+      }
+      function applyHash() {
+        if (typeof location === "undefined") return false;
+        var s = parseLabHash(location.hash);
+        if (!s) return false;
+        labState.base = s.base;
+        labState.twist = s.twist;
+        labState.prop = s.prop;
+        labState.palette = s.palette;
+        if (s.mode) labState.mode = s.mode;
+        return true;
+      }
+      function shareUrl() {
+        var here = typeof location !== "undefined" && location.href ? String(location.href).split("#")[0] : "";
+        return here + labHash();
+      }
+      function syncHash() {
+        try {
+          if (typeof history !== "undefined" && history.replaceState) history.replaceState(null, "", labHash());
+        } catch (e) { /* some file:// pages refuse; the lab still works */ }
+      }
+      if (window.addEventListener) {
+        window.addEventListener("hashchange", function () {
+          if (applyHash()) {
+            refreshLab();
+            el("lab").scrollIntoView({ behavior: prefersCalm() ? "auto" : "smooth" });
+          }
+        });
+      }
+
+      /* rebuild everything that depends on labState; sync = a user change worth putting in the address bar */
+      function refreshLab(opts) {
+        renderLabControls();
+        renderResult();
+        renderFinder();
+        if (opts && opts.sync) syncHash();
       }
 
       function randomKey(obj) {
@@ -1030,12 +1358,21 @@
         return keys[Math.floor(Math.random() * keys.length)];
       }
       el("summon").addEventListener("click", function () {
-        labState.base = randomKey(BASES);
-        labState.twist = randomKey(TWISTS);
-        labState.prop = randomKey(PROPS);
-        labState.palette = randomKey(PALETTES);
-        renderLabControls();
-        renderResult();
+        if (limitsSet()) {
+          var pool = fittingCombos();
+          if (!pool.length) return;
+          var c = pool[Math.floor(Math.random() * pool.length)];
+          labState.base = c.base;
+          labState.twist = c.twist;
+          labState.prop = c.prop;
+          labState.palette = c.palette;
+        } else {
+          labState.base = randomKey(BASES);
+          labState.twist = randomKey(TWISTS);
+          labState.prop = randomKey(PROPS);
+          labState.palette = randomKey(PALETTES);
+        }
+        refreshLab({ sync: true });
         el("copy-status").textContent = "";
         var panel = el("result");
         panel.classList.remove("conjuring");
@@ -1050,7 +1387,7 @@
         var b = currentBuild();
         var lines = [
           "My Halloween costume: " + b.name + " " + b.carrying,
-          "Creation No. " + b.number + " of 1,728 possible combinations.",
+          "Creation No. " + b.number + " of " + fmtInt(TOTAL_COMBOS) + " possible combinations.",
           "",
           b.desc,
           "",
@@ -1066,21 +1403,17 @@
           "Total estimate: " + fmtRange(b.costTotal),
           "",
           "What I need:"
-        ]).concat(b.materials.map(function (m) { return "- " + m; }));
+        ]).concat(b.materials.map(function (m) { return "- " + m; })).concat([
+          "",
+          "Rebuild this costume: " + shareUrl()
+        ]);
         return lines.join("\n");
       }
 
-      el("copy").addEventListener("click", function () {
-        var text = planText();
+      /* clipboard with a textarea fallback; reports in #copy-status */
+      function copyText(text, okMsg, failMsg) {
         var status = el("copy-status");
-        function done(ok) {
-          status.textContent = ok
-            ? "Copied — paste it into your notes or shopping list."
-            : "Copy was blocked by the browser — your plan is on screen above.";
-        }
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(function () { done(true); }, function () { fallback(); });
-        } else { fallback(); }
+        function done(ok) { status.textContent = ok ? okMsg : failMsg; }
         function fallback() {
           try {
             var ta = document.createElement("textarea");
@@ -1093,11 +1426,28 @@
             done(ok);
           } catch (e) { done(false); }
         }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () { done(true); }, function () { fallback(); });
+        } else { fallback(); }
+      }
+
+      el("copy").addEventListener("click", function () {
+        copyText(planText(),
+          "Copied — paste it into your notes or shopping list.",
+          "Copy was blocked by the browser — your plan is on screen above.");
+      });
+
+      el("copy-link").addEventListener("click", function () {
+        syncHash();
+        copyText(shareUrl(),
+          "Link copied — anyone who opens it sees this exact costume.",
+          "Copy was blocked by the browser — the link is in your address bar.");
       });
 
       el("share").addEventListener("click", function () {
         var status = el("copy-status");
         if (navigator.share) {
+          /* the plan text already ends with the link, so no separate url (avoids pasting it twice) */
           navigator.share({ title: "My Halloween costume plan", text: planText() })
             .then(function () { status.textContent = "Shared — go and haunt responsibly."; })
             .catch(function () { /* share sheet dismissed */ });
@@ -1121,11 +1471,41 @@
         el("copy-status").textContent = "Plan saved as " + a.download + " — take it shopping.";
       });
 
+      /* Halloween day: jump straight to a cheap, quick costume */
+      el("tonight").addEventListener("click", function () {
+        el("fit-budget").value = "25";
+        el("fit-time").value = "30";
+        readLimits();
+        labState.mode = "thrift";
+        refreshLab({ sync: true });
+        el("lab").scrollIntoView({ behavior: prefersCalm() ? "auto" : "smooth" });
+      });
+
+      /* ---------------- Lights out ---------------- */
+      var themeChosen = false;
+      function setTheme(dark) {
+        document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+        el("lights").setAttribute("aria-pressed", dark ? "true" : "false");
+      }
+      var darkQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+      setTheme(!!(darkQuery && darkQuery.matches));
+      if (darkQuery && darkQuery.addEventListener) {
+        darkQuery.addEventListener("change", function (ev) { if (!themeChosen) setTheme(ev.matches); });
+      }
+      el("lights").addEventListener("click", function () {
+        themeChosen = true;
+        setTheme(el("lights").getAttribute("aria-pressed") !== "true");
+      });
+
       /* ---------------- Go ---------------- */
+      var openedFromLink = applyHash();
       renderFilters();
       renderGrid();
-      renderLabControls();
-      renderResult();
+      refreshLab();
+      /* scroll once layout has settled; scrolling during parse lands short on small screens */
+      if (openedFromLink && window.addEventListener) {
+        window.addEventListener("load", function () { el("lab").scrollIntoView(); });
+      }
     </script>
   </body>
 </html>
