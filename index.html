@@ -13,11 +13,10 @@
     <title>Halloween Costume Studio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript><link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" /></noscript>
     <style>
       button, [role="button"], select, summary, input:not([type="checkbox"], [type="radio"]) { min-height: 2rem; }
-    </style>
-    <style>
       :root {
         --bg: #f6efe1;
         --bg-deep: #eee1c9;
@@ -471,7 +470,7 @@
     <!-- Costume detail -->
     <dialog id="detail" aria-labelledby="d-name">
       <button class="dialog-close" id="d-close" type="button" aria-label="Close costume details">×</button>
-      <img class="dialog-img" id="d-img" alt="" />
+      <img class="dialog-img" id="d-img" alt="" decoding="async" />
       <div class="dialog-body">
         <h3 id="d-name"></h3>
         <p class="tagline" id="d-tagline"></p>
@@ -734,8 +733,9 @@
           var m = Math.floor((rest % 3600000) / 60000);
           var s = Math.floor((rest % 60000) / 1000);
           el("count-num").textContent = days;
-          el("count-label").textContent = (days === 1 ? "day" : "days") +
+          var label = (days === 1 ? "day" : "days") +
             " until the next Halloween — Sunday 31 October 2027. Plenty of sewing time.";
+          if (el("count-label").textContent !== label) el("count-label").textContent = label;
           el("count-tick").textContent = "· " + pad(h) + ":" + pad(m) + ":" + pad(s) + " and counting";
         }
         tick();
@@ -765,6 +765,7 @@
         box.innerHTML = "";
         FILTERS.forEach(function (f) {
           var b = document.createElement("button");
+          b.setAttribute("data-filter", f.id);
           b.type = "button";
           b.className = "chip";
           b.textContent = f.label;
@@ -773,6 +774,9 @@
             activeFilter = f.id;
             renderFilters();
             renderGrid();
+            /* the chips are rebuilt, so hand keyboard focus back to the pressed one */
+            var again = el("filters").querySelector('[data-filter="' + f.id + '"]');
+            if (again) again.focus();
           });
           box.appendChild(b);
         });
@@ -795,7 +799,7 @@
           card.className = "card";
           card.setAttribute("aria-label", "View the build for " + c.name);
           card.innerHTML =
-            '<img src="' + c.img + '" alt="' + c.alt + '" loading="lazy" />' +
+            '<img src="' + c.img + '" alt="' + c.alt + '" loading="lazy" decoding="async" />' +
             '<span class="card-body" style="display:block">' +
               "<h3>" + c.name + "</h3>" +
               '<p class="tagline">' + c.tagline + "</p>" +
@@ -868,7 +872,8 @@
           el("copy-status").textContent = "";
         }
         dialog.close();
-        document.getElementById("lab").scrollIntoView({ behavior: "smooth" });
+        var calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        document.getElementById("lab").scrollIntoView({ behavior: calm ? "auto" : "smooth" });
       });
       dialog.addEventListener("click", function (ev) {
         var r = dialog.getBoundingClientRect();
@@ -907,6 +912,8 @@
             var b = document.createElement("button");
             b.type = "button";
             b.className = "opt";
+            b.setAttribute("data-group", g.key);
+            b.setAttribute("data-key", k);
             b.setAttribute("aria-pressed", labState[g.key] === k ? "true" : "false");
             b.innerHTML = (g.key === "palette" ? swatchHTML(item.colors) : "") +
               "<span>" + item.label + "</span>" +
@@ -915,6 +922,9 @@
               labState[g.key] = k;
               renderLabControls();
               renderResult();
+              /* the options are rebuilt, so hand keyboard focus back to the pressed one */
+              var again = el("lab-controls").querySelector('[data-group="' + g.key + '"][data-key="' + k + '"]');
+              if (again) again.focus();
             });
             row.appendChild(b);
           });
